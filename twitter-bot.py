@@ -1,11 +1,6 @@
-# Bot to download 15 Reddit memes daily and post them on Twitter automatically with Free plan
+# Bot to download Reddit memes and post them on Twitter automatically (limited to free plan)
 
-## 1- Download 15 Reddit memes daily at a set time.
-
-## 2- When there are at least 15 memes in the downloads folder, publish a tweet with each of them every 30 seconds. If there are more than 15 memes in the folder, it will publish the first 15 it finds.
-
-## 3- Move the published memes to the uploads folder.
-
+# Required Libraries
 import tweepy
 import schedule
 import time
@@ -20,6 +15,9 @@ import shutil
 # File directories
 DOWNLOADS_DIR = "downloads"
 UPLOADS_DIR = "uploads"
+
+# List of url images already downloaded
+downloaded_urls = set()
 
 # Load environment variables (configure these in a .env file)
 load_dotenv()
@@ -48,21 +46,35 @@ def ensure_directory(directory):
         os.makedirs(directory)
 
 def download_image(url, save_path):
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:
-        with open(save_path, 'wb') as file:
-            for chunk in response.iter_content(1024):
-                file.write(chunk)
+    if url not in downloaded_urls: # Check if the URL has already been downloaded
+        print(f"Downloading image: {url}") # Make sure to use 'url'
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            with open(save_path, 'wb') as file:
+                for chunk in response.iter_content(1024):
+                    file.write(chunk)
+            downloaded_urls.add(url) # Add the URL to the set after downloading
+        else:
+            print(f"Error al descargar la imagen de {url}")
+    else:
+        print(f"La imagen de {url} ya ha sido descargada.")
 
 def download_video(url, save_path):
-    response = requests.get(url, stream=True)
-    temp_path = save_path.replace(".mp4", ".tmp")
-    if response.status_code == 200:
-        with open(temp_path, 'wb') as file:
-            for chunk in response.iter_content(1024):
-                file.write(chunk)
-        convert_to_mp4(temp_path, save_path)
-        os.remove(temp_path)
+    if url not in downloaded_urls: # Check if the URL has already been downloaded
+        print(f"Downloading video: {url}") # Make sure to use 'url'
+        response = requests.get(url, stream=True)
+        temp_path = save_path.replace(".mp4", ".tmp")
+        if response.status_code == 200:
+            with open(temp_path, 'wb') as file:
+                for chunk in response.iter_content(1024):
+                    file.write(chunk)
+            convert_to_mp4(temp_path, save_path)
+            os.remove(temp_path)
+            downloaded_urls.add(url) # Add the URL to the set after downloading
+        else:
+            print(f"Error al descargar el video de {url}")
+    else:
+        print(f"El video de {url} ya ha sido descargado.")
 
 def convert_to_mp4(input_path, output_path):
     try:
@@ -85,18 +97,16 @@ def fetch_memes_from_reddit():
 
     ensure_directory(DOWNLOADS_DIR)
 
-    for post in subreddit.new(limit=15): # Download 15 new memes
+    for post in subreddit.new(limit=7):  # Download 6 memes
         post_time = datetime.fromtimestamp(post.created_utc, timezone.utc)
         if post_time < time_limit:
             continue
 
         if post.url.endswith(('.jpg', '.png', '.jpeg')): # If it is image
             save_path = os.path.join(DOWNLOADS_DIR, f"{post.id}.jpg")
-            print(f"Downloading image: {post.url}")
             download_image(post.url, save_path)
         elif post.url.endswith(('.gif', '.mp4')): # If it is video
             save_path = os.path.join(DOWNLOADS_DIR, f"{post.id}.mp4")
-            print(f"Downloading video: {post.url}")
             download_video(post.url, save_path)
 
 # Feature to post a tweet with the path of the downloaded file
@@ -121,8 +131,8 @@ def mover_a_uploads(archivos):
 def ejecutar_bot():
     print("Ejecutando bot...")
 
-    # Download memes once a day (change the time as you prefer)
-    schedule.every().day.at("18:38").do(fetch_memes_from_reddit)
+    # Download memes every 15 seconds
+    schedule.every(15).seconds.do(fetch_memes_from_reddit)
 
     while True:
         # Run scheduled tasks
@@ -131,15 +141,15 @@ def ejecutar_bot():
         # Check files in the downloads folder
         archivos = [f for f in os.listdir(DOWNLOADS_DIR) if f.endswith(('jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'))]
         
-        # Publish only if there are at least 15 files
-        if len(archivos) >= 15:
-            for archivo in archivos[:15]: # Only the first 15 files found are published
+        # Publish only if there are at least 5 files
+        if len(archivos) >= 5:
+            for archivo in archivos[:5]: # Only the first 5 files found are published
                 texto = f"Ruta del archivo: {os.path.join(DOWNLOADS_DIR, archivo)}"
                 if publicar_tweet(texto):
                     mover_a_uploads([archivo]) # Move file to uploads after publishing  
-                    time.sleep(30) # Wait 30 seconds between tweets
+                    time.sleep(15) # Wait 15 seconds between tweets
 
-        time.sleep(5)  # Check the folder every 5 seconds
+        time.sleep(10)  # Check the folder every 10 seconds
 
 if __name__ == "__main__":
     ejecutar_bot()
