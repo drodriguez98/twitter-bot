@@ -57,7 +57,7 @@ def fetch_memes_from_reddit():
     downloads_dir = "downloads"
     ensure_directory(downloads_dir)
 
-    for post in subreddit.new(limit=100):  # Ajusta el límite según sea necesario
+    for post in subreddit.new(limit=10):  # Ajusta el límite según sea necesario
         post_time = datetime.fromtimestamp(post.created_utc, timezone.utc)
         if post_time < time_limit:
             continue
