@@ -23,7 +23,7 @@ REDDIT_INTERVAL = 45  # in seconds
 TWEET_INTERVAL = 15  # in seconds
 MAX_FILES_PER_REDDIT_REQUEST = 7
 
-# Ensure directories exist
+# Create the necessary folders if they do not exist.
 def ensure_directory(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -51,7 +51,7 @@ REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
 
-# Initialize the set of already downloaded URLs from the JSON file
+# Load the URLs of already downloaded memes from the JSON file to avoid duplicates.
 def load_downloaded_urls():
     if os.path.exists(JSON_FILE):
         with open(JSON_FILE, 'r') as f:
@@ -60,7 +60,7 @@ def load_downloaded_urls():
 
 downloaded_urls = load_downloaded_urls()
 
-# Save downloaded URLs to the JSON file
+# Save downloaded meme URLs in JSON file for persistence.
 def save_downloaded_urls():
     with open(JSON_FILE, 'w') as f:
         json.dump(list(downloaded_urls), f)
@@ -74,7 +74,7 @@ client = tweepy.Client(
     access_token_secret=TWITTER_ACCESS_TOKEN_SECRET
 )
 
-# Downloading and handling media
+# Downloads an image from a URL and saves it to the downloads folder if it has not been previously downloaded and handle potential errors in the process.
 def download_image(url, save_path):
     if url not in downloaded_urls:
         logging.info(f"Downloading image: {url}")
@@ -90,6 +90,7 @@ def download_image(url, save_path):
     else:
         logging.info(f"Image from {url} already downloaded.")
 
+# Downloads a video from a URL and saves it to the downloads folder, converting it to MP4 format if necessary and handle potential errors in the process.
 def download_video(url, save_path):
     if url not in downloaded_urls:
         logging.info(f"Downloading video: {url}")
@@ -108,6 +109,7 @@ def download_video(url, save_path):
     else:
         logging.info(f"Video from {url} already downloaded.")
 
+# Convert a temporary video file to MP4 format using MoviePy and handle potential errors in the process.
 def convert_to_mp4(input_path, output_path):
     try:
         clip = VideoFileClip(input_path)
@@ -116,7 +118,7 @@ def convert_to_mp4(input_path, output_path):
     except Exception as e:
         logging.error(f"Error converting {input_path} to MP4: {e}")
 
-# Fetch memes from Reddit
+# It pulls memes from Reddit's 'memes' subreddit and downloads them if they are recent images or videos.
 def fetch_memes_from_reddit():
     reddit = praw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -139,7 +141,7 @@ def fetch_memes_from_reddit():
             save_path = os.path.join(DOWNLOADS_DIR, f"{post.id}.mp4")
             download_video(post.url, save_path)
 
-# Function to post tweet with media
+# Post a tweet with the URL of a meme file and handle potential errors in the process.
 def publish_tweet(texto):
     try:
         response = client.create_tweet(text=texto)
@@ -149,7 +151,7 @@ def publish_tweet(texto):
         logging.error(f"Error posting tweet: {e}")
         return False
 
-# Function to move files to uploads folder
+# Move downloaded files from the downloads folder to the uploads folder after publishing.
 def move_to_uploads(files):
     for file in files:
         origin_path = os.path.join(DOWNLOADS_DIR, file)
@@ -157,7 +159,7 @@ def move_to_uploads(files):
         shutil.move(origin_path, destination_path)
         logging.info(f"File moved to uploads: {file}")
 
-# Function to handle the bot's operations in separate threads
+# Control the main flow of the bot: check if there are enough files to tweet and make regular posts.
 def bot_operations():
     while True:
         # Check files in the downloads folder
@@ -173,7 +175,7 @@ def bot_operations():
 
         time.sleep(10)
 
-# Main function to execute all tasks concurrently
+# Start the bot, configure scheduled tasks, and run the main bot process in the background.
 def run_bot():
     logging.info("Bot started.")
     

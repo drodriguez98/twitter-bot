@@ -1,16 +1,25 @@
-2025-01-26 18:59:31,068 - INFO - Bot started.
-2025-01-26 18:59:42,877 - INFO - Bot started.
-2025-01-26 19:00:28,715 - INFO - Downloading image: https://i.redd.it/glyyc4ilndfe1.jpeg
-2025-01-26 19:00:29,076 - INFO - Downloading video: https://i.redd.it/5kgy1af3mdfe1.gif
-2025-01-26 19:00:32,011 - INFO - Image from https://i.redd.it/ryv3t2u2ldfe1.png already downloaded.
-2025-01-26 19:00:32,011 - INFO - Downloading image: https://i.redd.it/9plr0pcmidfe1.jpeg
-2025-01-26 19:00:32,220 - INFO - Downloading image: https://i.redd.it/67d5krwjidfe1.jpeg
-2025-01-26 19:00:32,588 - INFO - Downloading image: https://i.redd.it/5ud1pzuuhdfe1.jpeg
-2025-01-26 19:00:32,895 - INFO - Downloading image: https://i.redd.it/a2w28ffigdfe1.jpeg
-2025-01-26 19:00:33,364 - INFO - Tweet published: {'edit_history_tweet_ids': ['1883575769357562193'], 'text': 'Ruta del file: downloads\\1iakfwm.jpg', 'id': '1883575769357562193'}
-2025-01-26 19:00:33,364 - INFO - File moved to uploads: 1iakfwm.jpg
-2025-01-26 19:00:48,656 - INFO - Tweet published: {'text': 'Ruta del file: downloads\\1iakjlz.jpg', 'id': '1883575833601695972', 'edit_history_tweet_ids': ['1883575833601695972']}
-2025-01-26 19:00:48,657 - INFO - File moved to uploads: 1iakjlz.jpg
-2025-01-26 19:01:03,942 - INFO - Tweet published: {'edit_history_tweet_ids': ['1883575897761947834'], 'id': '1883575897761947834', 'text': 'Ruta del file: downloads\\1iakk9p.jpg'}
-2025-01-26 19:01:03,943 - INFO - File moved to uploads: 1iakk9p.jpg
-2025-01-26 19:02:26,542 - INFO - Bot started.
+2025-01-26 19:18:09,840 - INFO - Bot started.
+2025-01-26 19:18:55,695 - INFO - Downloading image: https://i.redd.it/pymq9swrqdfe1.png
+2025-01-26 19:18:56,431 - INFO - Downloading image: https://i.redd.it/tjlidcgnpdfe1.jpeg
+2025-01-26 19:18:56,866 - INFO - Downloading image: https://i.redd.it/cprbst3jpdfe1.jpeg
+2025-01-26 19:18:57,200 - INFO - Downloading image: https://i.redd.it/mr9khd3fpdfe1.png
+2025-01-26 19:18:58,036 - INFO - Downloading image: https://i.redd.it/47h1flk7pdfe1.jpeg
+2025-01-26 19:18:58,400 - INFO - Downloading image: https://i.redd.it/gm6488crodfe1.jpeg
+2025-01-26 19:18:58,779 - INFO - Downloading video: https://i.redd.it/j54bspjlodfe1.gif
+2025-01-26 19:19:00,405 - INFO - Tweet published: {'text': 'Ruta del file: downloads\\1ialhvw.jpg', 'id': '1883580412745695560', 'edit_history_tweet_ids': ['1883580412745695560']}
+2025-01-26 19:19:00,405 - INFO - File moved to uploads: 1ialhvw.jpg
+2025-01-26 19:19:15,705 - INFO - Tweet published: {'id': '1883580476973072586', 'edit_history_tweet_ids': ['1883580476973072586'], 'text': 'Ruta del file: downloads\\1ialk4q.jpg'}
+2025-01-26 19:19:15,706 - INFO - File moved to uploads: 1ialk4q.jpg
+2025-01-26 19:19:31,003 - INFO - Tweet published: {'edit_history_tweet_ids': ['1883580541103992878'], 'id': '1883580541103992878', 'text': 'Ruta del file: downloads\\1ialld4.jpg'}
+2025-01-26 19:19:31,003 - INFO - File moved to uploads: 1ialld4.jpg
+2025-01-26 19:19:46,296 - INFO - Tweet published: {'edit_history_tweet_ids': ['1883580605297766500'], 'id': '1883580605297766500', 'text': 'Ruta del file: downloads\\1iallwy.jpg'}
+2025-01-26 19:19:46,297 - INFO - File moved to uploads: 1iallwy.jpg
+2025-01-26 19:19:47,690 - INFO - Image from https://i.redd.it/pymq9swrqdfe1.png already downloaded.
+2025-01-26 19:19:47,691 - INFO - Image from https://i.redd.it/tjlidcgnpdfe1.jpeg already downloaded.
+2025-01-26 19:19:47,691 - INFO - Image from https://i.redd.it/cprbst3jpdfe1.jpeg already downloaded.
+2025-01-26 19:19:47,691 - INFO - Image from https://i.redd.it/mr9khd3fpdfe1.png already downloaded.
+2025-01-26 19:19:47,691 - INFO - Image from https://i.redd.it/47h1flk7pdfe1.jpeg already downloaded.
+2025-01-26 19:19:47,691 - INFO - Image from https://i.redd.it/gm6488crodfe1.jpeg already downloaded.
+2025-01-26 19:19:47,691 - INFO - Video from https://i.redd.it/j54bspjlodfe1.gif already downloaded.
+2025-01-26 19:20:01,572 - INFO - Tweet published: {'id': '1883580669462208851', 'text': 'Ruta del file: downloads\\1ialmk5.jpg', 'edit_history_tweet_ids': ['1883580669462208851']}
+2025-01-26 19:20:01,573 - INFO - File moved to uploads: 1ialmk5.jpg
