@@ -15,6 +15,7 @@ LOG_FILE = "bot.log"
 JSON_FILE = "published_news.json"
 NEWS_API_URL = "https://newsapi.org/v2/top-headlines"
 COUNTRY = "us"  # Specify the country for news (e.g., 'us', 'gb', 'es')
+FETCH_NEWS_INTERVAL = 3000  # Interval between fetching news in seconds
 TWEET_INTERVAL = 60  # Interval between tweets in seconds
 
 # Ensure directories exist
@@ -106,7 +107,7 @@ def bot_operations():
                     published_news.add(url)
                     save_published_news()
                     time.sleep(TWEET_INTERVAL)
-        time.sleep(3000)  # Wait before fetching news again
+        time.sleep(FETCH_NEWS_INTERVAL)  # Wait before fetching news again
 
 # Run the bot
 if __name__ == "__main__":
