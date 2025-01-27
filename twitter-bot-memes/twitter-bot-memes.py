@@ -12,7 +12,7 @@ import praw
 # Configuration Constants
 LOGS_DIR = "logs"
 LOG_FILE = "bot.log"
-JSON_FILE = "downloaded_urls.json"
+JSON_FILE = "published_memes.json"
 REDDIT_INTERVAL = 45  # in seconds
 TWEET_INTERVAL = 15  # in seconds
 MAX_POSTS_PER_REDDIT_REQUEST = 7
