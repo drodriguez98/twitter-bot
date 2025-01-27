@@ -2,34 +2,26 @@ import tweepy
 import schedule
 import time
 import os
-import requests
-import praw
 import json
 import logging
 import threading
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
-from moviepy.video.io.VideoFileClip import VideoFileClip
-import shutil
+import praw
 
 # Configuration Constants
-DOWNLOADS_DIR = "downloads"
-UPLOADS_DIR = "uploads"
 LOGS_DIR = "logs"
 LOG_FILE = "bot.log"
 JSON_FILE = "downloaded_urls.json"
-MIN_FILES_FOR_TWEET = 5
 REDDIT_INTERVAL = 45  # in seconds
 TWEET_INTERVAL = 15  # in seconds
-MAX_FILES_PER_REDDIT_REQUEST = 7
+MAX_POSTS_PER_REDDIT_REQUEST = 7
 
 # Create the necessary folders if they do not exist.
 def ensure_directory(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-ensure_directory(DOWNLOADS_DIR)
-ensure_directory(UPLOADS_DIR)
 ensure_directory(LOGS_DIR)
 
 # Logging setup
@@ -46,12 +38,12 @@ TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
 TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
 TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
 TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
-TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")  
+TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT")
 
-# Load the URLs of already downloaded memes from the JSON file to avoid duplicates.
+# Load the URLs of already tweeted memes from the JSON file to avoid duplicates.
 def load_downloaded_urls():
     if os.path.exists(JSON_FILE):
         with open(JSON_FILE, 'r') as f:
@@ -74,51 +66,8 @@ client = tweepy.Client(
     access_token_secret=TWITTER_ACCESS_TOKEN_SECRET
 )
 
-# Downloads an image from a URL and saves it to the downloads folder if it has not been previously downloaded and handle potential errors in the process.
-def download_image(url, save_path):
-    if url not in downloaded_urls:
-        logging.info(f"Downloading image: {url}")
-        response = requests.get(url, stream=True)
-        if response.status_code == 200:
-            with open(save_path, 'wb') as file:
-                for chunk in response.iter_content(1024):
-                    file.write(chunk)
-            downloaded_urls.add(url)
-            save_downloaded_urls()
-        else:
-            logging.error(f"Error downloading image from {url}")
-    else:
-        logging.info(f"Image from {url} already downloaded.")
-
-# Downloads a video from a URL and saves it to the downloads folder, converting it to MP4 format if necessary and handle potential errors in the process.
-def download_video(url, save_path):
-    if url not in downloaded_urls:
-        logging.info(f"Downloading video: {url}")
-        response = requests.get(url, stream=True)
-        temp_path = save_path.replace(".mp4", ".tmp")
-        if response.status_code == 200:
-            with open(temp_path, 'wb') as file:
-                for chunk in response.iter_content(1024):
-                    file.write(chunk)
-            convert_to_mp4(temp_path, save_path)
-            os.remove(temp_path)
-            downloaded_urls.add(url)
-            save_downloaded_urls()
-        else:
-            logging.error(f"Error downloading video from {url}")
-    else:
-        logging.info(f"Video from {url} already downloaded.")
-
-# Convert a temporary video file to MP4 format using MoviePy and handle potential errors in the process.
-def convert_to_mp4(input_path, output_path):
-    try:
-        clip = VideoFileClip(input_path)
-        clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
-        clip.close()
-    except Exception as e:
-        logging.error(f"Error converting {input_path} to MP4: {e}")
-
-# It pulls memes from Reddit's 'memes' subreddit and downloads them if they are recent images or videos.
+# Fetch memes from Reddit's 'memes' subreddit
+# It retrieves recent post URLs and skips already tweeted ones.
 def fetch_memes_from_reddit():
     reddit = praw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -129,19 +78,21 @@ def fetch_memes_from_reddit():
     subreddit = reddit.subreddit("memes")
     time_limit = datetime.now(timezone.utc) - timedelta(hours=24)
 
-    for post in subreddit.new(limit=MAX_FILES_PER_REDDIT_REQUEST):
+    new_urls = []
+    for post in subreddit.new(limit=MAX_POSTS_PER_REDDIT_REQUEST):
         post_time = datetime.fromtimestamp(post.created_utc, timezone.utc)
         if post_time < time_limit:
             continue
 
-        if post.url.endswith(('.jpg', '.png', '.jpeg')):
-            save_path = os.path.join(DOWNLOADS_DIR, f"{post.id}.jpg")
-            download_image(post.url, save_path)
-        elif post.url.endswith(('.gif', '.mp4')):
-            save_path = os.path.join(DOWNLOADS_DIR, f"{post.id}.mp4")
-            download_video(post.url, save_path)
+        if post.shortlink not in downloaded_urls:
+            logging.info(f"New meme found: {post.shortlink}")
+            new_urls.append(post.shortlink)
+            downloaded_urls.add(post.shortlink)
 
-# Post a tweet with the URL of a meme file and handle potential errors in the process.
+    save_downloaded_urls()
+    return new_urls
+
+# Post a tweet with the URL of a meme and handle potential errors in the process.
 def publish_tweet(texto):
     try:
         response = client.create_tweet(text=texto)
@@ -151,34 +102,24 @@ def publish_tweet(texto):
         logging.error(f"Error posting tweet: {e}")
         return False
 
-# Move downloaded files from the downloads folder to the uploads folder after publishing.
-def move_to_uploads(files):
-    for file in files:
-        origin_path = os.path.join(DOWNLOADS_DIR, file)
-        destination_path = os.path.join(UPLOADS_DIR, file)
-        shutil.move(origin_path, destination_path)
-        logging.info(f"File moved to uploads: {file}")
-
-# Control the main flow of the bot: check if there are enough files to tweet and make regular posts.
+# Control the main flow of the bot: fetch memes and tweet them at regular intervals.
 def bot_operations():
     while True:
-        # Check files in the downloads folder
-        files = [f for f in os.listdir(DOWNLOADS_DIR) if f.endswith(('jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'))]
-        
-        # Publish only if there are enough files
-        if len(files) >= MIN_FILES_FOR_TWEET:
-            for file in files[:MIN_FILES_FOR_TWEET]:
-                texto = f"Ruta del file: {os.path.join(DOWNLOADS_DIR, file)}"
-                if publish_tweet(texto):
-                    move_to_uploads([file])
-                    time.sleep(TWEET_INTERVAL)
+        # Fetch new meme URLs from Reddit
+        new_urls = fetch_memes_from_reddit()
+
+        # Publish tweets for the new URLs
+        for url in new_urls:
+            texto = f"Meme del día: {url}"
+            if publish_tweet(texto):
+                time.sleep(TWEET_INTERVAL)
 
         time.sleep(10)
 
 # Start the bot, configure scheduled tasks, and run the main bot process in the background.
 def run_bot():
     logging.info("Bot started.")
-    
+
     # Schedule meme fetching at regular intervals
     schedule.every(REDDIT_INTERVAL).seconds.do(fetch_memes_from_reddit)
 
