@@ -106,7 +106,7 @@ def bot_operations():
                     published_news.add(url)
                     save_published_news()
                     time.sleep(TWEET_INTERVAL)
-        time.sleep(45)  # Wait before fetching news again
+        time.sleep(3000)  # Wait before fetching news again
 
 # Run the bot
 if __name__ == "__main__":
