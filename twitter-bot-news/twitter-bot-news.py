@@ -41,6 +41,15 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+# Initialize Twitter API client
+client = tweepy.Client(
+    bearer_token=TWITTER_BEARER_TOKEN,
+    consumer_key=TWITTER_API_KEY,
+    consumer_secret=TWITTER_API_SECRET,
+    access_token=TWITTER_ACCESS_TOKEN,
+    access_token_secret=TWITTER_ACCESS_TOKEN_SECRET
+)
+
 # Load published news URLs from JSON file
 def load_published_news():
     if os.path.exists(JSON_FILE):
@@ -54,15 +63,6 @@ published_news = load_published_news()
 def save_published_news():
     with open(JSON_FILE, 'w') as f:
         json.dump(list(published_news), f)
-
-# Initialize Twitter API client
-client = tweepy.Client(
-    bearer_token=TWITTER_BEARER_TOKEN,
-    consumer_key=TWITTER_API_KEY,
-    consumer_secret=TWITTER_API_SECRET,
-    access_token=TWITTER_ACCESS_TOKEN,
-    access_token_secret=TWITTER_ACCESS_TOKEN_SECRET
-)
 
 # Fetch news from NewsAPI
 def fetch_news():
