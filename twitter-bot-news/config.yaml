@@ -1,0 +1,31 @@
+# config.yaml
+
+# Directory for log files
+logs_dir: "logs"
+
+# Log file name
+log_file: "bot.log"
+
+# JSON file to store published news URLs
+json_file: "published_news.json"
+
+# News API base URL
+news_api_url: "https://newsapi.org/v2/top-headlines"
+
+# Country code for news (e.g., 'us', 'gb', 'es')
+country: "us"
+
+# Number of articles to fetch per request
+page_size: 3
+
+# Keywords to filter out from news headlines
+blacklisted_keywords:
+  - "sensitive"
+  - "unwanted"
+  - "test"
+
+# Interval between fetching news in seconds
+fetch_news_interval: 60
+
+# Interval between tweets in seconds
+tweet_interval: 15

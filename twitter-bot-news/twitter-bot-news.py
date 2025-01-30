@@ -6,19 +6,35 @@ import json
 import logging
 import threading
 import requests
+import yaml
 from dotenv import load_dotenv
-from datetime import datetime, timezone
+from queue import Queue
 
-# Configuration Constants
-LOGS_DIR = "logs"
-LOG_FILE = "bot.log"
-JSON_FILE = "published_news.json"
-NEWS_API_URL = "https://newsapi.org/v2/top-headlines"
-COUNTRY = "us"  # Specify the country for news (e.g., 'us', 'gb', 'es')
-FETCH_NEWS_INTERVAL = 3000  # Interval between fetching news in seconds
-TWEET_INTERVAL = 60  # Interval between tweets in seconds
+# Load environment variables
+load_dotenv()
 
-# Ensure directories exist
+TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
+TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
+TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
+TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+
+# Load configuration from YAML file
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+FETCH_NEWS_INTERVAL = config.get("fetch_news_interval", 3000)
+TWEET_INTERVAL = config.get("tweet_interval", 60)
+COUNTRY = config.get("country", "us")
+PAGE_SIZE = config.get("page_size", 10)
+BLACKLISTED_KEYWORDS = config.get("blacklisted_keywords", [])
+LOGS_DIR = config.get("logs_dir", "logs")
+LOG_FILE = config.get("log_file", "bot.log")
+JSON_FILE = config.get("json_file", "published_news.json")
+NEWS_API_URL = config.get("news_api_url", "https://newsapi.org/v2/top-headlines")
+
+# Create a directory if it doesn't exist
 def ensure_directory(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -31,16 +47,6 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
-# Load environment variables
-load_dotenv()
-
-TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
-TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
-TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
-TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
-TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
-NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 
 # Load published news URLs from JSON file
 def load_published_news():
@@ -71,7 +77,7 @@ def fetch_news():
         params = {
             'apiKey': NEWS_API_KEY,
             'country': COUNTRY,
-            'pageSize': 10  # Number of articles to fetch per request
+            'pageSize': PAGE_SIZE
         }
         response = requests.get(NEWS_API_URL, params=params)
         if response.status_code == 200:
@@ -84,16 +90,27 @@ def fetch_news():
         logging.error(f"Exception occurred while fetching news: {e}")
         return []
 
+# Check if a news headline is valid
+def is_valid_news(headline):
+    return not any(keyword.lower() in headline.lower() for keyword in BLACKLISTED_KEYWORDS)
+
 # Post a tweet with news headline and URL
 def publish_tweet(headline, url):
-    try:
-        tweet_text = f"{headline} \nRead more: {url}"
-        response = client.create_tweet(text=tweet_text)
-        logging.info(f"Tweet published: {response.data}")
-        return True
-    except Exception as e:
-        logging.error(f"Error posting tweet: {e}")
-        return False
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            tweet_text = f"{headline} \nRead more: {url}"
+            response = client.create_tweet(text=tweet_text)
+            logging.info(f"Tweet published: {response.data}")
+            return True
+        except Exception as e:
+            logging.error(f"Error posting tweet (attempt {attempt + 1}): {e}")
+            time.sleep(5)  # Wait before retrying
+    logging.error(f"Failed to publish tweet after {max_retries} attempts: {headline}")
+    return False
+
+# Queue for news articles to be tweeted
+news_queue = Queue()
 
 # Main bot operation to fetch and tweet news
 def bot_operations():
@@ -102,16 +119,26 @@ def bot_operations():
         for article in articles:
             url = article.get('url')
             headline = article.get('title')
-            if url and headline and url not in published_news:
-                if publish_tweet(headline, url):
-                    published_news.add(url)
-                    save_published_news()
-                    time.sleep(TWEET_INTERVAL)
-        time.sleep(FETCH_NEWS_INTERVAL)  # Wait before fetching news again
+            if url and headline and url not in published_news and is_valid_news(headline):
+                news_queue.put((headline, url))
+        time.sleep(FETCH_NEWS_INTERVAL)
+
+# Worker function to process news from the queue and tweet them
+def tweet_worker():
+    while True:
+        headline, url = news_queue.get()
+        if publish_tweet(headline, url):
+            published_news.add(url)
+            save_published_news()
+        news_queue.task_done()
 
 # Run the bot
 if __name__ == "__main__":
     logging.info("News Tweet Bot started.")
+
+    # Start multiple workers for tweeting
+    for _ in range(3):  # Number of workers
+        threading.Thread(target=tweet_worker, daemon=True).start()
 
     # Start the bot operations in a separate thread
     threading.Thread(target=bot_operations, daemon=True).start()
